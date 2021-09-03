@@ -1,0 +1,199 @@
+# When motor_UPDRS is used as a target class
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import norm
+import seaborn as sb
+from sklearn.metrics import classification_report,confusion_matrix,accuracy_score
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+
+data=pd.read_csv('D:/tele.csv')
+
+print(data.motor_UPDRS.std())
+print(data.motor_UPDRS.median())
+
+# Using standard deviation to remove outlier
+upper_limit=data.age.median()+3*data.age.std()
+lower_limit=data.age.median()-3*data.age.std()
+
+
+up=data.motor_UPDRS.median()+2*data.motor_UPDRS.std()
+low=data.motor_UPDRS.median()-2*data.motor_UPDRS.std()
+
+
+data_noOutlier=data[(data.age<upper_limit)&(data.age>lower_limit)&(data.motor_UPDRS<up)&(data.motor_UPDRS>low)]
+data_noOutlier
+
+test_array=data_noOutlier['motor_UPDRS'].to_numpy(dtype='float')
+y=test_array
+y=y.astype('int')
+y
+
+
+# Splitting the data into train and test set
+train_array=data_noOutlier[[  'Jitter(%)', 'Jitter(Abs)', 'Jitter:RAP','Jitter:PPQ5', 'Jitter:DDP','total_UPDRS','Shimmer',
+                            'Shimmer(dB)', 'Shimmer:APQ3', 'Shimmer:APQ5',
+       'Shimmer:APQ11', 'Shimmer:DDA', 'NHR', 'HNR', 'RPDE', 'DFA', 'PPE']].to_numpy(dtype='float')
+X=train_array
+X
+
+X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.30,random_state=40,shuffle=True)
+
+
+# Applying algorithms
+# Gaussian Naive Bayes
+from sklearn.naive_bayes import GaussianNB
+model=GaussianNB()
+model.fit(X_train,y_train)
+y_pred=model.predict(X_test)
+df1=pd.DataFrame({'Actual Status':y_test,'Predicted Status':y_pred})
+df1
+acc=accuracy_score(y_test,y_pred)*100
+acc1.append(acc)
+print(acc)
+
+
+# Simple Decision Tree Classifier
+from sklearn import tree
+dt_clf=tree.DecisionTreeClassifier(max_depth=5)
+dt_clf.fit(X_train,y_train)
+y_pred=dt_clf.predict(X_test)
+dt_clf.score(X_train,y_train)
+acc=accuracy_score(y_test,y_pred)*100
+acc1.append(acc)
+print(acc)
+
+
+# Random Forest Classifier
+from sklearn import ensemble
+rt_clf=ensemble.RandomForestClassifier(n_estimators=100)
+rt_clf.fit(X_train,y_train)
+y_pred=rt_clf.predict(X_test)
+rt_clf.score(X_train,y_train)
+acc=accuracy_score(y_test,y_pred)*100
+acc1.append(acc)
+print(acc)
+
+
+# Stochastic Gradient Descent Classifier
+from sklearn.linear_model import SGDClassifier
+sg_clf=SGDClassifier(loss="hinge", penalty="l2", max_iter=200)
+sg_clf.fit(X, y)
+sg=sg_clf.score(X_train,y_train)
+y_pred=sg_clf.predict(X_test)
+acc=accuracy_score(y_test,y_pred)*100
+acc1.append(acc)
+print(acc)
+
+
+# Quadratic Discriminant Analysis 
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+import numpy as np
+qd_clf = QuadraticDiscriminantAnalysis()
+qd_clf.fit(X_train,y_train)
+y_pred=qd_clf.predict(X_test)
+qd_clf.score(X_train,y_train)
+acc=accuracy_score(y_test,y_pred)*100
+acc1.append(acc)
+print(acc)
+
+
+# AdaBoost Classifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.datasets import make_classification
+ad_clf=AdaBoostClassifier(n_estimators=100, learning_rate=1)
+model=ad_clf.fit(X_train, y_train)
+y_pred2=model.predict(X_test)
+y_pred2
+
+acc=accuracy_score(y_test,y_pred2)*100
+acc1.append(acc)
+print(acc)
+
+
+# Support Verctor Classifier
+from sklearn import svm
+C=1.0
+classifier=svm.SVC(kernel='linear', C=C).fit(X, y)
+classifier.fit(X_train,y_train)
+y_pred3=classifier.predict(X_test)
+acc=accuracy_score(y_test,y_pred3)*100
+acc1.append(acc)
+print(acc)
+
+
+# Logistic Regression
+from sklearn.feature_selection import RFE
+from sklearn.linear_model import LogisticRegression
+rfe = LogisticRegression()
+rfe = rfe.fit(X_train,y_train)
+y_predict=rfe.predict(X_test)
+print("Accuracy: ",(accuracy_score(y_test,y_predict)*100))
+acc=accuracy_score(y_test,y_predict)*100
+acc1.append(acc)
+print(acc)
+
+
+# Printing consolidated accuracy of all used algorithms
+print(acc1)
+
+
+# Plotting a bar graph for the different accuracies of different used algorithms
+from matplotlib import pyplot as plt
+fig = plt.figure(figsize =(10, 7))
+x=["GaussianNB","DecisionTree","RandomForest","SGD",
+   "Quadratic","AdaBoost","svm","LogisticRegression"]
+plt.bar(x,acc1,width=0.2)
+plt.show()
+
+
+# Classification of the patients into mild and severe category
+test_array=y_pred
+mild=0
+sev=0
+for i in range(len(test_array)):
+    if(test_array[i]<=25):
+        mild+=1
+    else:
+        sev+=1
+sever=[mild,sev]
+
+
+# Plotting a pie chart for showing the classification of the disease as per trained machine model
+import matplotlib.pyplot as plt
+import numpy as np
+mylabels = ["Mild", "Severe"]
+mycolors = ["yellow","red"] 
+plt.pie(sever,autopct="%1.1f%%",labels = mylabels,colors = mycolors)
+plt.show() 
+
+
+# List of accuracies when different target classes are used
+# When motor_UPDRS is used
+accuracyMotor=[22.093023255813954, 31.1046511627907, 52.616279069767444, 4.593023255813954, 29.360465116279073, 11.802325581395348, 30.40697674418605, 21.3953488372093]
+print(accuracyMotor)
+
+# When total_UPDRS is used
+accuracyTotal=[15.579919215233698, 30.005770340450088, 46.16272360069244, 11.886901327178304, 25.50490478938257, 25.50490478938257, 27.293710328909405, 19.792267743796884]
+print(accuracyTotal)
+
+
+# Plotting double bar graph for comparison of accuracies when differnt target classes motor_UPDRS, total_UPDRS are used to train the machine model
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+w=0.2
+x=["GaussianNB","DecisionTree","RandomForest","SGD","Quadratic","AdaBoost","svm","LogisticRegression"]
+
+bar1=np.arange(len(accuracyTotal))
+bar2=[i+w for i in bar1]
+plt.bar(bar1,accuracyMotor,w,color='blue',label="accuracyMotor")
+plt.bar(bar2,accuracyTotal,w,color='red',label="accuracyTotal")
+
+plt.xlabel("Algorithms")
+plt.legend()
+plt.xticks(bar1+w/2,x,rotation='vertical')
+plt.show()
